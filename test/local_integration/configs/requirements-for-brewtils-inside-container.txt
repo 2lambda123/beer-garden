@@ -57,7 +57,7 @@ pytest-tornado==0.8.1     # via -r requirements.in
 pytest==6.1.2             # via -r requirements.in, pytest-lazy-fixture, pytest-mock, pytest-tornado
 python-box==3.4.6         # via yapconf
 pytz==2020.4              # via -r requirements.in, apscheduler, babel, brewtils, tzlocal
-pyyaml==5.3.1             # via apispec
+pyyaml==5.4             # via apispec
 regex==2020.11.13         # via black
 requests==2.31.0          # via brewtils, codecov, pyrabbit2, sphinx
 ruamel.yaml.clib==0.2.2   # via ruamel.yaml
