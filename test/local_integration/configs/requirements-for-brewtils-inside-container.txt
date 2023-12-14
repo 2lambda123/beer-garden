@@ -76,7 +76,7 @@ tornado==6.1              # via -r requirements.in, pytest-tornado
 typed-ast==1.4.3          # via black
 typing-extensions==3.7.4.3  # via black
 tzlocal==2.1              # via apscheduler
-urllib3==1.26.2           # via requests
+urllib3==1.26.18           # via requests
 watchdog==0.10.3          # via yapconf
 wrapt==1.12.1             # via brewtils
 yapconf==0.3.7            # via brewtils
