@@ -148,7 +148,7 @@ class RequestValidator(object):
 
                 if request.command_type is None:
                     request.command_type = command.command_type
-                elif command.command_type != request.command_type:
+                elif request.command_type not in Request.COMMAND_TYPES:
                     raise ModelValidationError(
                         "Command Type for Request was %s but the command specified "
                         "the type as %s" % (request.command_type, command.command_type)
@@ -201,9 +201,10 @@ class RequestValidator(object):
         if request_parameters is None:
             request_parameters = request.parameters or {}
 
-        self._validate_no_extra_request_parameter_keys(
-            request_parameters, command_parameters
-        )
+        if not command.allow_any_kwargs:
+            self._validate_no_extra_request_parameter_keys(
+                request_parameters, command_parameters
+            )
 
         parameters_to_save = {}
         for command_parameter in command_parameters:
@@ -219,6 +220,13 @@ class RequestValidator(object):
             self._validate_regex(extracted_value, command_parameter)
             parameters_to_save[command_parameter.key] = extracted_value
 
+        if command.allow_any_kwargs:
+            for request_parameter_key in request_parameters:
+                if request_parameter_key not in parameters_to_save:
+                    parameters_to_save[request_parameter_key] = request_parameters[
+                        request_parameter_key
+                    ]
+
         self.logger.debug("Successfully Updated and Validated Parameters.")
         self.logger.debug("Parameters: %s", parameters_to_save)
         return parameters_to_save
@@ -231,7 +239,6 @@ class RequestValidator(object):
             and command_parameter.choices
             and command_parameter.choices.strict
         ):
-
             choices = command_parameter.choices
 
             def map_param_values(kv_pair_list):
@@ -282,7 +289,6 @@ class RequestValidator(object):
                     self._session.get(parsed_value["address"], params=query_params).text
                 )
             elif choices.type == "command":
-
                 if isinstance(choices.value, six.string_types):
                     parsed_value = parse(choices.value, parse_as="func")
 
@@ -477,7 +483,8 @@ class RequestValidator(object):
         self, request_parameters, command_parameters
     ):
         """Validate that all the parameters passed in were valid keys. If there is a key
-        specified that is not noted in the database, then a validation error is thrown"""
+        specified that is not noted in the database, then a validation error is thrown
+        """
         self.logger.debug("Validating Keys")
         valid_keys = [cp.key for cp in command_parameters]
         self.logger.debug("Valid Keys are : %s" % valid_keys)
@@ -576,6 +583,27 @@ def get_requests(**kwargs) -> List[Request]:
     return db.query(Request, **kwargs)
 
 
+# TODO: Add support for Request Delete event type
+# @publish_event(Events.REQUEST_DELETED)
+def delete_requests(**kwargs) -> dict:
+    """Delete Requests
+
+    Args:
+        kwargs: Parameters to be passed to the DB query
+
+    Returns:
+        The kwargs used to match Requests
+
+    """
+    requests = db.query(Request, filter_params=kwargs)
+
+    for request in requests:
+        db.delete(request)
+
+    logger.info(f"Deleted {len(requests)} requests")
+    return kwargs
+
+
 def _publish_request(request: Request, is_admin: bool, priority: int):
     """Publish a Request"""
     queue.put(
@@ -612,9 +640,9 @@ def process_request(
         The processed Request
 
     """
-    if type(new_request) == Request:
+    if isinstance(new_request, Request):
         request = new_request
-    elif type(new_request) == RequestTemplate:
+    elif isinstance(new_request, RequestTemplate):
         request = Request.from_template(new_request)
     else:
         raise TypeError(
@@ -869,7 +897,6 @@ def handle_wait_events(event):
 
     # Only care about local garden
     if event.garden == config.get("garden.name"):
-
         if event.name == Events.GARDEN_STOPPED.name:
             # When shutting down we need to close all handing connections/threads
             # waiting for a response. This will invoke each connection/thread to be
@@ -914,3 +941,30 @@ def handle_event(event):
                         update_request(existing_request, _publish_error=False)
                     except RequestStatusTransitionError:
                         pass
+        # TODO: Add support for Request Delete event type
+        # elif event.name == Events.REQUEST_DELETED.name:
+        #     delete_requests(**event.payload)
+
+    if event.name in (
+        Events.REQUEST_COMPLETED.name,
+        Events.REQUEST_UPDATED.name,
+        Events.REQUEST_CANCELED.name,
+    ):
+        if event.payload.status in ("INVALID", "CANCELED", "ERROR", "SUCCESS"):
+            existing_request = db.query_unique(Request, id=event.payload.id)
+            if existing_request:
+                clean_command_type_temp(existing_request)
+
+
+def clean_command_type_temp(request: Request):
+    # Only delete TEMP requests if it is the root request
+    if not request.has_parent and request.command_type == "TEMP":
+        db.delete(request)
+        return
+
+    # Delete any children that are TEMP once the current request is completed
+    request.children = db.query(Request, filter_params={"parent": request})
+
+    for child in request.children:
+        if child.command_type == "TEMP":
+            db.delete(child)

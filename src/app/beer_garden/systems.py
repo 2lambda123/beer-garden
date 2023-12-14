@@ -96,6 +96,7 @@ def update_system(
     icon_name: str = None,
     metadata: dict = None,
     template: str = None,
+    groups: list = None,
 ) -> System:
     """Update an already existing System
 
@@ -147,6 +148,9 @@ def update_system(
 
     if template is not None:
         updates["template"] = template
+
+    if groups is not None:
+        updates["groups"] = groups
 
     if metadata:
         metadata_update = copy.deepcopy(system.metadata)
@@ -422,7 +426,6 @@ def handle_event(event: Event) -> None:
         event: The event to handle
     """
     if event.garden != config.get("garden.name"):
-
         if event.name in (Events.SYSTEM_CREATED.name, Events.SYSTEM_UPDATED.name):
             event.payload.local = False
 

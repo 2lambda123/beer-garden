@@ -10,9 +10,9 @@ import sys
 import tarfile
 
 BUILD_IMAGE = "bgio/build"
-NODE_IMAGE = "node:16"
+NODE_IMAGE = "node:18"
 SUPPORTED_DISTRIBUTIONS = ["centos7"]
-SUPPORTED_PYTHONS = ["3.7"]
+SUPPORTED_PYTHONS = ["3.7","3.8","3.9","3.10","3.11","3.12"]
 BUILD_TYPES = ["rpm"]
 
 SCRIPT_PATH = os.path.dirname(os.path.abspath(__file__))
@@ -32,25 +32,6 @@ def parse_args(cli_args):
     return parser.parse_args(cli_args)
 
 
-def find_and_extract_react_ui():
-    release_path = f"{BASE_PATH}/src"
-
-    try:
-        react_ui_tarball = glob.glob(f"{release_path}/react-ui*.tar.gz")[0]
-    except IndexError:
-        print("Could not locate react release tarball in ${release_path}")
-        sys.exit(1)
-
-    with tarfile.open(react_ui_tarball) as _file:
-        _file.extractall(f"{release_path}/")
-
-    os.remove(react_ui_tarball)
-
-    # rename the directory to something consistent
-    react_ui_dir = glob.glob(f"{release_path}/*react-ui*")[0]
-    os.rename(react_ui_dir, f"{release_path}/react-ui")
-
-
 def build_rpms(version, iteration, cli_dist, cli_python, local, docker_envs):
 
     if cli_dist:
@@ -63,13 +44,12 @@ def build_rpms(version, iteration, cli_dist, cli_python, local, docker_envs):
     else:
         build_dists = SUPPORTED_DISTRIBUTIONS
 
-    build_python = cli_python or "3.7"
+    build_python = cli_python or "3.11"
     if build_python not in SUPPORTED_PYTHONS:
         print("Invalid python (%s) for RPM build" % cli_python)
         print("Supported distributions are: %s" % SUPPORTED_PYTHONS)
         sys.exit(1)
 
-    find_and_extract_react_ui()
 
     # This massages the input env dict into ["-e", "key=value"]
     # It's gross, don't worry about it
@@ -86,15 +66,6 @@ def build_rpms(version, iteration, cli_dist, cli_python, local, docker_envs):
     )
 
     subprocess.run(ui_build_cmd).check_returncode()
-
-    reactui_build_cmd = (
-        ["docker", "run", "--rm", "-v", f"{BASE_PATH}/src:/src"]
-        + env_vars
-        + ["-e", "PUBLIC_URL=/preview"]
-        + [NODE_IMAGE, "make", "-C", "/src/react-ui", "deps", "package"]
-    )
-
-    subprocess.run(reactui_build_cmd).check_returncode()
 
     for dist in build_dists:
         tag = f"{dist}-python{build_python}"

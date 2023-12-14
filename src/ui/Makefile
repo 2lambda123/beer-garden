@@ -35,6 +35,7 @@ help:
 	@python -c "$$PRINT_HELP_PYSCRIPT" < $(MAKEFILE_LIST)
 
 deps: ## install javascript dependencies
+	node --version
 	npm install
 
 
@@ -67,7 +68,8 @@ coverage: ## check code coverage
 
 # Packaging
 package: clean ## builds distribution
-	npm run build
+	node --version
+	NODE_OPTIONS=--openssl-legacy-provider npm run build
 
 
 # Docker

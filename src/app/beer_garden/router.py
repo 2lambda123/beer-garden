@@ -105,6 +105,7 @@ route_functions = {
     "REQUEST_COMPLETE": beer_garden.requests.complete_request,
     "REQUEST_READ": beer_garden.requests.get_request,
     "REQUEST_READ_ALL": beer_garden.requests.get_requests,
+    "REQUEST_DELETE": beer_garden.requests.delete_requests,
     "COMMAND_READ": beer_garden.commands.get_command,
     "COMMAND_READ_ALL": beer_garden.commands.get_commands,
     "INSTANCE_READ": beer_garden.systems.get_instance,
@@ -583,7 +584,7 @@ def _target_from_type(operation: Operation) -> str:
         or "PUBLISH_EVENT" in operation.operation_type
         or "RUNNER" in operation.operation_type
         or operation.operation_type
-        in ("PLUGIN_LOG_RELOAD", "QUEUE_DELETE_ALL", "SYSTEM_CREATE")
+        in ("PLUGIN_LOG_RELOAD", "QUEUE_DELETE_ALL", "SYSTEM_CREATE", "REQUEST_DELETE")
     ):
         return config.get("garden.name")
 
@@ -649,7 +650,30 @@ def _target_from_type(operation: Operation) -> str:
 
 def _system_name_lookup(system: Union[str, System]) -> str:
     with routing_lock:
-        return system_name_routes.get(str(system))
+        route = system_name_routes.get(str(system))
+
+    if route:
+        return route
+    else:
+        # If we don't know about the route, attempt to find it and update the routing table
+        systems = beer_garden.systems.get_systems(
+            namespace=system.namespace,
+            name=system.name,
+            version=system.version,
+        )
+        if len(systems) == 1:
+            for garden in get_gardens():
+                for system in garden.systems:
+                    if systems[0].id == system.id:
+                        with routing_lock:
+                            # Then add routes to systems
+                            add_routing_system(system=system, garden_name=garden.name)
+                        logger.error(
+                            "Router mapping is out of sync, you should consider re-syncing"
+                        )
+                        return garden.name
+
+    return None
 
 
 def _system_id_lookup(system_id: str) -> str:

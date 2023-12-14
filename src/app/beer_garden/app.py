@@ -32,7 +32,7 @@ import beer_garden.queue.api as queue
 import beer_garden.router
 from beer_garden.events.handlers import garden_callbacks
 from beer_garden.events.parent_procesors import HttpParentUpdater
-from beer_garden.events.processors import FanoutProcessor, QueueListener
+from beer_garden.events.processors import EventProcessor, FanoutProcessor, QueueListener
 from beer_garden.local_plugins.manager import PluginManager
 from beer_garden.log import load_plugin_log_config
 from beer_garden.metrics import PrometheusServer
@@ -86,14 +86,34 @@ class Application(StoppableThread):
 
         tasks, run_every = db.prune_tasks(**ttl_config)
         if run_every:
-            self.helper_threads.append(
-                HelperThread(
-                    db.get_pruner(),
-                    tasks=tasks,
-                    run_every=timedelta(minutes=run_every),
-                    cancel_threshold=ttl_config.in_progress,
+            if ttl_config.get("multithread", False):
+                for task in tasks:
+                    self.helper_threads.append(
+                        HelperThread(
+                            db.get_pruner(),
+                            tasks=[task],
+                            run_every=timedelta(minutes=run_every),
+                            cancel_threshold=-1,
+                        )
+                    )
+                    if ttl_config.in_progress > 0:
+                        self.helper_threads.append(
+                            HelperThread(
+                                db.get_pruner(),
+                                tasks=[],
+                                run_every=timedelta(minutes=run_every),
+                                cancel_threshold=ttl_config.in_progress,
+                            )
+                        )
+            else:
+                self.helper_threads.append(
+                    HelperThread(
+                        db.get_pruner(),
+                        tasks=tasks,
+                        run_every=timedelta(minutes=run_every),
+                        cancel_threshold=ttl_config.in_progress,
+                    )
                 )
-            )
 
         metrics_config = config.get("metrics")
         if metrics_config.prometheus.enabled:
@@ -144,6 +164,8 @@ class Application(StoppableThread):
                 if not helper.thread.is_alive():
                     self.logger.warning(f"{helper.display_name} is dead, restarting")
                     helper.start()
+
+            self.entry_manager.check_entry_points()
 
         self._shutdown()
 
@@ -231,6 +253,10 @@ class Application(StoppableThread):
         self.logger.debug("Setting up message queues...")
         queue.initial_setup()
 
+        if config.get("replication.enabled"):
+            self.logger.debug("Setting up message queues...")
+            queue.setup_event_consumer(config.get("mq"))
+
         self.logger.debug("Starting helper threads...")
         for helper_thread in self.helper_threads:
             helper_thread.start()
@@ -304,11 +330,19 @@ class Application(StoppableThread):
         self.logger.debug("Stopping event manager")
         beer_garden.events.manager.stop()
 
+        if config.get("replication.enabled"):
+            self.logger.debug("Stopping Event Consumer")
+            queue.shutdown_event_consumer()
+
         self.logger.info("Successfully shut down Beer-garden")
 
     def _setup_events_manager(self):
         """Set up the event manager for the Main Processor"""
-        event_manager = FanoutProcessor(name="event manager")
+
+        if config.get("replication.enabled"):
+            event_manager = EventProcessor(name="event manager")
+        else:
+            event_manager = FanoutProcessor(name="event manager")
 
         # Forward all events down into the entry points
         event_manager.register(self.entry_manager, manage=False)

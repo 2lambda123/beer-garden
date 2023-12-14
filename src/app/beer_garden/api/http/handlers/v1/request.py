@@ -107,7 +107,6 @@ class RequestAPI(AuthorizationHandler):
         for op in patch:
             if op.operation == "replace":
                 if op.path == "/status":
-
                     # If we get a start just assume there's no other op in patch
                     if op.value.upper() == "IN_PROGRESS":
                         operation.operation_type = "REQUEST_START"
@@ -238,6 +237,32 @@ class RequestListAPI(AuthorizationHandler):
             "searchable": true,
             "orderable": true,
             "search": {"value": "SUCCESS", "regex":false}
+          }
+          ```
+
+          * To query on empty values, in the value use 'NOT' to return
+            values that match ''
+          `columns` query parameters:
+          ```JSON
+          {
+            "data": "command",
+            "name": "",
+            "searchable": true,
+            "orderable": true,
+            "search": {"value":"NOT","regex":false}
+          }
+          ```
+
+          * To invert a field set match, in the value use the prefix 'NOT ' to return
+            values that do not match that string value
+          `columns` query parameters:
+          ```JSON
+          {
+            "data": "command",
+            "name": "",
+            "searchable": true,
+            "orderable": true,
+            "search": {"value":"NOT command","regex":false}
           }
           ```
 
@@ -509,6 +534,130 @@ class RequestListAPI(AuthorizationHandler):
         self.set_header("Content-Type", "application/json; charset=UTF-8")
         self.write(response)
 
+    async def delete(self):
+        """
+        ---
+        summary: Bulk delete of Requests
+        description: |
+
+          test holding
+
+        parameters:
+          - name: system
+            in: query
+            required: false
+            description: |
+                System Name
+            type: string
+          - name: system_version
+            in: query
+            required: false
+            description: |
+                System Version
+            type: string
+          - name: instance_name
+            in: query
+            required: false
+            description: |
+                Instance Name
+            type: string
+          - name: namespace
+            in: query
+            required: false
+            description: |
+                Namespace
+            type: string
+          - name: command
+            in: query
+            required: false
+            description: |
+                Command Name
+            type: string
+          - name: id
+            in: query
+            required: false
+            description: |
+                Request ID
+            type: string
+          - name: is_event
+            in: query
+            required: false
+            description: |
+                Is Event
+            type: bool
+          - name: output_type
+            in: query
+            required: false
+            description: |
+                Output Type
+            type: string
+          - name: status
+            in: query
+            required: false
+            description: |
+                Status
+            type: string
+          - name: command_type
+            in: query
+            required: false
+            description: |
+                Command Type
+            type: string
+          - name: hidden
+            in: query
+            required: false
+            description: |
+                Hidden
+            type: bool
+          - name: has_parent
+            in: query
+            required: false
+            description: |
+                Command Type
+            type: bool
+          - name: requester
+            in: query
+            required: false
+            description: |
+                Requester
+            type: string
+        responses:
+          204:
+            description: Requests has been successfully deleted
+          50x:
+            $ref: '#/definitions/50xError'
+        tags:
+          - Requests
+        """
+
+        self.verify_user_global_permission(REQUEST_DELETE)
+
+        query_kwargs = {}
+        for supportedArg in [
+            "system",
+            "system_version",
+            "instance_name",
+            "namespace",
+            "command",
+            "id",
+            "is_event",
+            "output_type",
+            "status",
+            "command_type",
+            "hidden",
+            "has_parent",
+            "requester",
+        ]:
+            value = self.get_argument(supportedArg, default=None)
+            if value is not None:
+                query_kwargs[supportedArg] = value
+
+        await self.client(
+            Operation(operation_type="REQUEST_DELETE", kwargs=query_kwargs)
+        )
+
+        self.set_status(204)
+
     def _parse_form_request(self) -> BrewtilsRequest:
         args = {"parameters": {}}
 
@@ -592,15 +741,27 @@ class RequestListAPI(AuthorizationHandler):
                         "value"
                     ]
 
+                elif column["search"]["value"].upper() in ["NOT", "NOT "]:
+                    filter_params[column["data"] + "__exact"] = ""
                 elif column["data"] == "comment":
-                    filter_params[column["data"] + "__contains"] = column["search"][
-                        "value"
-                    ]
+                    if column["search"]["value"].upper().startswith("NOT "):
+                        filter_params[column["data"] + "__not__contains"] = column[
+                            "search"
+                        ]["value"][4:]
+                    else:
+                        filter_params[column["data"] + "__contains"] = column["search"][
+                            "value"
+                        ]
 
                 else:
-                    filter_params[column["data"] + "__startswith"] = column["search"][
-                        "value"
-                    ]
+                    if column["search"]["value"].upper().startswith("NOT "):
+                        filter_params[column["data"] + "__not__startswith"] = column[
+                            "search"
+                        ]["value"][4:]
+                    else:
+                        filter_params[column["data"] + "__startswith"] = column[
+                            "search"
+                        ]["value"]
 
                 hint_helper.append(column["data"])
 
@@ -666,7 +827,7 @@ class RequestListAPI(AuthorizationHandler):
 
         try:
             request_form_dict = json.loads(request_form)
-        except (json.JSONDecodeError):
+        except json.JSONDecodeError:
             raise BadRequest(reason="request parameter must be valid JSON")
 
         self._add_files_to_request(request_form_dict)

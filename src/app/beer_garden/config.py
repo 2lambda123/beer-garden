@@ -745,6 +745,16 @@ _DB_SPEC = {
                     "previous_names": ["action_request_ttl"],
                     "alt_env_names": ["ACTION_REQUEST_TTL"],
                 },
+                "admin": {
+                    "type": "int",
+                    "default": -1,
+                    "description": (
+                        "Number of minutes to wait before deleting "
+                        "Admin requests (negative number for never)"
+                    ),
+                    "previous_names": [],
+                    "alt_env_names": [],
+                },
                 "info": {
                     "type": "int",
                     "default": 15,
@@ -754,6 +764,16 @@ _DB_SPEC = {
                     ),
                     "previous_names": ["info_request_ttl"],
                     "alt_env_names": ["INFO_REQUEST_TTL"],
+                },
+                "temp": {
+                    "type": "int",
+                    "default": 15,
+                    "description": (
+                        "Number of minutes to wait before deleting "
+                        "TEMP requests (negative number for never)"
+                    ),
+                    "previous_names": [],
+                    "alt_env_names": [],
                 },
                 "in_progress": {
                     "type": "int",
@@ -772,6 +792,21 @@ _DB_SPEC = {
                         "FILE documents (negative number for never)"
                     ),
                     "alt_env_names": ["FILE_REQUEST_TTL"],
+                },
+                "batch_size": {
+                    "type": "int",
+                    "default": -1,
+                    "description": (
+                        "Batch size for deleting documents "
+                        "(negative number for never)"
+                    ),
+                    "alt_env_names": [],
+                },
+                "multithread": {
+                    "type": "bool",
+                    "default": False,
+                    "description": ("Runs pruners in seperate threads"),
+                    "alt_env_names": [],
                 },
             },
         },
@@ -1467,6 +1502,17 @@ _REQUEST_VALIDATION_SPEC = {
     },
 }
 
+_REPLICATION_SPEC = {
+    "type": "dict",
+    "items": {
+        "enabled": {
+            "type": "bool",
+            "default": False,
+            "description": "Publish subset of events to Rabbit to allow all Gardens to stay in sync when replicated",
+        },
+    },
+}
+
 _SPECIFICATION = {
     "auth": _AUTH_SPEC,
     "configuration": _META_SPEC,
@@ -1480,5 +1526,6 @@ _SPECIFICATION = {
     "plugin": _PLUGIN_SPEC,
     "request_validation": _REQUEST_VALIDATION_SPEC,
     "scheduler": _SCHEDULER_SPEC,
+    "replication": _REPLICATION_SPEC,
     "ui": _UI_SPEC,
 }

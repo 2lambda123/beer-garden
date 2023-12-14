@@ -46,13 +46,27 @@ export default function commandIndexController(
       ])
       .withBootstrap();
 
+  $scope.getTopicsHtml = function(topics) {
+    if (topics === undefined || topics == null || topics.length == 0){
+      return "''";
+    }
+
+    var htmlTopics = topics[0];
+
+    for (var i = 1; i < topics.length; i++){
+      htmlTopics = htmlTopics + "<br>" + topics[i];
+    }
+
+    return "'" + htmlTopics + "'";
+  }
+
   $scope.instanceCreated = function(_instance) {
     $scope.dtInstance = _instance;
 
     $('#commandIndexTable').on('length.dt', (event, settings, len) => {
       localStorageService.set('_command_index_length', len);
     });
-  };
+  }; 
 
   $scope.hiddenComparator = function(hidden, checkbox) {
     return checkbox || !hidden;
@@ -115,9 +129,12 @@ export default function commandIndexController(
           hidden: command.hidden,
           namespace: system.namespace,
           name: command.name,
+          command_type: command.command_type || 'ACTION',
           system: system.display_name || system.name,
           version: system.version,
           description: command.description || 'No Description Provided',
+          topics: command.topics || [],
+          tags: command.tags || [],
         });
       });
     });
@@ -177,4 +194,5 @@ export default function commandIndexController(
   };
 
   $scope.successCallback($rootScope.gardensResponse, $rootScope.systems);
+
 }

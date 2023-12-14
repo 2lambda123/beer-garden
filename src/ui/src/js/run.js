@@ -13,6 +13,7 @@ appRun.$inject = [
   '$state',
   '$stateParams',
   '$http',
+  '$location',
   '$q',
   '$uibModal',
   '$transitions',
@@ -32,6 +33,7 @@ appRun.$inject = [
  * @param  {Object} $state               Angular's $state object.
  * @param  {Object} $stateParams         Angular's $stateParams object.
  * @param  {Object} $http                Angular's $http object.
+ * @param  {Object} $location            Angular's $location object.
  * @param  {Object} $q                   Angular's $q object.
  * @param  {Object} $uibModal            Angular UI's $uibModal object.
  * @param  {Object} $transitions         Angular's $transitions object.
@@ -49,6 +51,7 @@ export default function appRun(
     $state,
     $stateParams,
     $http,
+    $location,
     $q,
     $uibModal,
     $transitions,
@@ -64,6 +67,12 @@ export default function appRun(
   $rootScope.$state = $state;
   $rootScope.$stateParams = $stateParams;
 
+  if ($location.search()['showNav'] == 'false'){
+    $rootScope.showNav = false;
+  } else {
+    $rootScope.showNav = true;
+  }
+
   let loginModal;
   $rootScope.loginInfo = {};
 
@@ -71,6 +80,10 @@ export default function appRun(
   $rootScope.apiBaseUrl = '';
 
   $rootScope.config = {};
+
+  $rootScope.config.defaultHome = 'base.systems()';
+  $rootScope.config.defaultHomePage = 'base.systems';
+  $rootScope.config.defaultHomeParameters = {};
 
   $rootScope.themes = {
     default: false,
@@ -139,6 +152,10 @@ export default function appRun(
     const theme = localStorageService.get('currentTheme') || 'default';
     $rootScope.changeTheme(theme, false);
 
+    $rootScope.config.defaultHome = localStorageService.get('defaultHome') || 'base.systems()';
+    $rootScope.config.defaultHomePage = localStorageService.get('defaultHomePage') || 'base.systems';
+    $rootScope.config.defaultHomeParameters = localStorageService.get('defaultHomeParameters') || {};
+
     // $rootScope.loadUser(token).catch(
     //   // This prevents the situation where the user needs to logout but the
     //   // logout button isn't displayed because there's no user loaded
@@ -195,6 +212,76 @@ export default function appRun(
     }
   };
 
+  $rootScope.setHomeToCurrent = function() {
+    let params = $rootScope.$stateParams;
+    let page = $rootScope.$state.router.globals.current.name;
+
+    let homeParameters = {};
+
+    for (var key in params){
+      if(params[key] != null && !key.startsWith("$")){
+        homeParameters[key] = params[key];
+      }
+    }
+
+    let paramsString = $rootScope.convertDictToJson(homeParameters);
+
+    let newHomePage = null;
+    if(paramsString == null){
+      newHomePage = `${page}()`;
+    } else {
+      newHomePage = `${page}(${paramsString})`;
+    }
+
+    localStorageService.set('defaultHome', newHomePage);
+    localStorageService.set('defaultHomePage', page);
+    localStorageService.set('defaultHomeParameters', homeParameters);
+
+    $rootScope.config.defaultHome = newHomePage;
+    $rootScope.config.defaultHomePage = page;
+    $rootScope.config.defaultHomeParameters = homeParameters;
+
+    location.reload();
+  }
+
+  $rootScope.convertDictToJson = function(dictObject) {
+    let jsonString = null;
+    for (var key in dictObject){
+      if (dictObject[key != null] && !key.startsWith("$")){
+        if (typeof dictObject[key] == "string" || dictObject[key] instanceof String){
+          if (jsonString == null){
+            jsonString = `${key} : "${dictObject[key]}"`;
+          } else {
+            jsonString = `${jsonString}, ${key} : "${dictObject[key]}"`;
+          }
+        }
+        else if (typeof dictObject[key] == "object" || dictObject[key] instanceof Object){
+          if (jsonString == null){
+            jsonString = `${key} : ${$rootScope.convertDictToJson(dictObject[key])}`;
+          } else {
+            jsonString = `${jsonString}, ${key} : ${$rootScope.convertDictToJson(dictObject[key])}`;
+          }
+        } else {
+          if (jsonString == null){
+            jsonString = `${key} : ${dictObject[key]}`;
+          } else {
+            jsonString = `${jsonString}, ${key} : ${dictObject[key]}`;
+          }
+        }
+      }
+    }
+
+    if (jsonString == null){
+      return null;
+    }
+
+    return `{${jsonString}}`;
+  }
+
+  $rootScope.getHome = function() {
+    return $rootScope.config.defaultHome;
+  }
+
   $rootScope.authEnabled = function() {
     return $rootScope.config.authEnabled;
   };
@@ -241,7 +328,7 @@ export default function appRun(
   };
 
   $transitions.onSuccess({to: 'base'}, () => {
-    $state.go('base.systems');
+    $state.go($rootScope.config.defaultHomePage, $rootScope.config.defaultHomeParameters);
   });
 
   $rootScope.setMenuPage = function(page) {

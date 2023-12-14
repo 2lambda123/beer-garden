@@ -1,5 +1,111 @@
 # Beer Garden Changelog
 
+# 3.22.0
+
+12/13/2023
+
+- Replication of all events, when configured, except for Garden Sync events. Garden sync events spawn off additional events that will be replicated properly.
+- Add support for commands to have tags, used for filtering on the commands index page
+- Publish Instance Status changed to Instance default topic {Namespace}.{System}.{Version}.{Instance}
+- Upgraded Brewtils version to [3.22.0](https://github.com/beer-garden/brewtils/releases/tag/3.22.0)
+
+# 3.21.0
+
+12/05/2023
+
+- When Beer-Garden is replicated, publishes required events to RabbitMQ keep the environments in sync.
+- On Request Index page, the prefix NOT is supported to invert string query or search for empty strings. 
+- Adding "?showNav=false" to the end of any UI page will remove the navigation bar
+- Upgrading unstable docker images to install Brewtils develop branch
+
+# 3.20.0
+
+11/16/2023
+
+- Adds the ability to delete Requests by Plugin on the System Admin page wihtin the plugin sub-menu. These are local deletes only
+- Adds Is Alive check for Entry Points, if sub process is killed externally then it is restarted
+- Add error handling if Subscriber Request has exception at creation
+- Updates request validation to support allow_any_kwargs on commands
+- Upgraded Brewtils version to [3.21.0](https://github.com/beer-garden/brewtils/releases/tag/3.21.0)
+
+# 3.19.1
+
+11/9/2023
+
+- Rolls back to Python 3.11 until [cpython ticket](https://github.com/python/cpython/issues/111615) is resolved, expected 3.12.1
+- Expands docker build to include various versions of Python
+- Fixed bug in Topics to require full matching for subscriptions, not substrings
+- Expanded pub/sub testing
+- Upgraded Brewtils version to [3.20.2](https://github.com/beer-garden/brewtils/releases/tag/3.20.2)
+
+## 3.19.0
+
+11/7/2023
+
+- Adds support for Published Event Requests
+- Adds support for Requests to spawn Publish Request
+- Upgraded Brewtils version to [3.20.1](https://github.com/beer-garden/brewtils/releases/tag/3.20.1)
+- Updated testing baseline to support Python 3.12, and requirements build off 3.10
+- All docker images support Python 3.12
+- RPM build is against Python 3.12
+- Updated Command Type Icons
+- Updated tooltips on Command Types
+- Added icon for Subscription based Command/Requests
+- Updated Request View page to show Namespace
+
+## 3.18.1
+
+10/20/2023
+
+- Fixed auto brew conf to support NAME/VERSION parameters
+- Fixed auto brew to support PLUGIN_ARGS
+- Fixed missing default home
+- Upgraded Brewtils version to [3.19.0](https://github.com/beer-garden/brewtils/releases/tag/3.19.0)
+
+## 3.18.0
+
+10/13/23
+
+- Can set any page as the home page
+- Add command type TEMP that is pruned after parent request is completed or 
+  when it completes if it is the top level request
+- Add Auto Decorator feature for classes without annoations
+
+## 3.17.2
+
+10/10/23
+
+- Add Request Pruner for command type Admin
+- Add batching for large pruner
+- Add multithreading for pruner
+
+## 3.17.1
+
+7/20/23
+
+### Other Changes
+
+- Update RPM build process to use Node 18
+
+## 3.17.0
+
+7/19/23
+
+### Other Changes
+
+- Updated preview version of the new UI with better support for commands with
+  dynamic parameters
+- Bumped dependency versions
+
+## 3.16.2
+
+2/1/23
+
+### Other Changes
+
+- Preview version of the new UI now has intended feature parity with the
+  existing UI.
+
 ## 3.16.1
 
 1/10/23

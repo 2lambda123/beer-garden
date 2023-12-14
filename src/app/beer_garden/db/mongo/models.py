@@ -243,6 +243,9 @@ class Command(MongoModel, EmbeddedDocument):
     hidden = BooleanField()
     icon_name = StringField()
     metadata = DictField()
+    tags = ListField(field=StringField())
+    topics = ListField(field=StringField())
+    allow_any_kwargs = BooleanField(default=False)
 
     def clean(self):
         """Validate before saving to the database"""
@@ -337,6 +340,7 @@ class Request(MongoModel, Document):
     hidden = BooleanField(required=False)
     requester = StringField(required=False)
     parameters_gridfs = FileField()
+    is_event = BooleanField(required=False)
 
     meta = {
         "queryset_class": FileFieldHandlingQuerySet,
@@ -589,6 +593,7 @@ class System(MongoModel, Document):
     metadata = DictField()
     local = BooleanField(default=True)
     template = StringField()
+    groups = ListField(field=StringField())
 
     meta = {
         "auto_create_index": False,  # We need to manage this ourselves
