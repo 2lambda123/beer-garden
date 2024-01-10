@@ -153,15 +153,29 @@ Once a `release/*` branch is solid, it should follow these steps:
 
 ## Hotfix Branches
 
-`hotfix/*` branches represent critical bugs that need to be fixed in the
-currently deployed `master` branch. These should be used only when necessary.
+`hotfix/*` branches should be used for critical bugs in the `master` branch. They should be used only when necessary and should represent a narrow focus on easily testable issues. The process for creating and contributing a `hotfix/*` branch is as follows:
+1. Checkout master (`git checkout master`)
+2. Create hotfix branch (`git checkout hotfix/hotfix_1`)
+3. Fix the bug in software
+4. Write Unit/Integration Tests for bugs
+5. Quick end-to-end manual verification that bug no longer exists
+6. Bump the version (`X.X.X`)
+7. Merge to `master`
+8. Merge to `develop` if not already fixed in that branch They should be used only when necessary and should represent a narrow focus on easily testable issues.
 All `hotfix/*` branches must start with the `hotfix/` prefix. Hotfix branches
 are not meant to be long-lived branches. They exist until they are merged into
 `master` and `develop`. Once merged into these branches, it can be saefly
 deleted. The `hotfix/*` branch requires that the developer do as much testing
 as possible. All `hotfix/*` branches should really be as narrowly focused and
-easily testable as possible. The process for creating and contributing a
-`hotfix/*` branch is as follows:
+easily testable as possible. The process for creating and contributing a `hotfix/*` branch is as follows:
+1. Checkout master (`git checkout master`)
+2. Create hotfix branch (`git checkout hotfix/hotfix_1`)
+3. Fix the bug in software
+4. Write Unit/Integration Tests for bugs
+5. Quick end-to-end manual verification that bug no longer exists
+6. Bump the version (`X.X.X`)
+7. Merge to `master`
+8. Merge to `develop` if not already fixed in that branch
 
 1. Checkout master (`git checkout master`)
 2. Create hotfix branch (`git checkout hotfix/hotfix_1`)
