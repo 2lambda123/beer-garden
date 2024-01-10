@@ -90,7 +90,7 @@ which time they will be deleted. All `feature/*` branches should be tested
 before a merge request is created. `feature/*` branches can optionally be tied
 to a tracking system of the project's choice.
 
-### Feature Branch Workflow
+### Creating a Feature Branch Workflow
 
 When creating a feature, these are the basic steps a developer will follow to
 contribute their feature to the beergarden project.
@@ -115,7 +115,7 @@ following:
 5. Merge the branch into `develop`
   * You may not be able to do this step if you do not have permissions
 
-## Release Branches
+## Feature Branches (Emphasizing Testing Before Merge Request)
 
 `release/*` branches represent release candidates for the project. All
 `release/*` branches must start with the `release/` prefix. Release branches
