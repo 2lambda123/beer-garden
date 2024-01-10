@@ -133,13 +133,17 @@ branches. Release branches should not contain a dev version. All versions in
 a `release/*` branch should either be release candidates (`1.0.0-rc1`) or
 finalized versions (`1.0.0`). The release process will do the following:
 
-1. Check that version number matches what was described above (commit pre-hook)
+The `release/*` branch undergoes a build process, which includes the following steps:
+1. Check that version number matches semantic versioning
 2. Run Unit/Integration Tests
-3. Build all Artifacts
-4. Deploy all Artifacts
-5. Deploy to integration environment
-6. Run end-to-end automated tests
-7. Deploy documentation
+3. Build and deploy artifacts
+4. Run end-to-end automated tests
+5. Deploy documentation
+
+Once a `release/*` branch is ready for release, it should follow these steps:
+1. Change the version to a finalized version (`X.X.X`)
+2. Merge the branch into `master`
+3. Merge the branch into `develop`
 
 Once a `release/*` branch is solid, it should follow these steps:
 
