@@ -66,8 +66,8 @@ a `SNAPSHOT` or `dev` suffix. (e.g. `1.0.0-SNAPSHOT`, `1.0.0.dev0`, etc)
 
 ### Develop Build Process
 
-When a push or a merge occurrs on `develop` a build kicks off. The build process
-for `develop` is not very involved. It should run unit & integration tests and
+When a push or a merge occurrs on `develop` a build kicks off. The 'develop' branch process
+for `develop` is not very involved. The build process should include running unit and integration tests. It should run unit tests first and then proceed to run the integration tests. Note that running the integration tests is at the project's discretion and should be carefully considered based on its impact on the development cycle. 
 that is all. It is worth noting what we mean when we say integration tests.
 Integration tests in this context means that the project in question will work
 on a given platform, with a given DB, etc. Another note here is that if your
