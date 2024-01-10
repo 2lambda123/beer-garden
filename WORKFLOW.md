@@ -24,7 +24,22 @@ should _always_ be pristine. There should also only be merge commits in
 Instead all merges to `master` should be coming from `hotfix/*` or `release/*`.
 More on these special branches later.
 
-### Master build process
+### Master Build Process
+
+The `master` branch represents the latest stable version of beergarden. It should _always_ be pristine. There should also only be merge commits in `master`. A developer should never be committing/pushing directly to `master`. Instead, all merges to `master` should be coming from `hotfix/*` or `release/*` branches. Follow the steps below to merge to the `master` branch: 
+1. Create a pull request from the `hotfix/*` or `release/*` branch into `master`
+2. Ensure code review is completed
+3. Make changes based on the code review feedback if required
+4. Merge the pull request into `master`
+
+#### Build Process
+
+The `master` build process includes the following steps:
+
+1. Check that version number matches semantic versioning (commit pre-hook)
+2. Tag with version number
+3. Deploy artifact(s)
+4. Deploy documentation
 
 When a branch is merged to `master` the build process will kick off. The
 `master` build process includes creating a tag of the version that is being
