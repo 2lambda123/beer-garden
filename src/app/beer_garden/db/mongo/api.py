@@ -17,7 +17,7 @@ from mongoengine import (
 from mongoengine.queryset.visitor import Q, QCombination
 
 import beer_garden.db.mongo.models
-from beer_garden.db.mongo.models import MongoModel
+from beer_garden.db.mongo.models import MongoModel, MongoLog
 from beer_garden.db.mongo.parser import MongoParser
 from beer_garden.db.mongo.pruner import MongoPruner
 from beer_garden.db.mongo.util import (
